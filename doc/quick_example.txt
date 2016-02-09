@@ -1,0 +1,91 @@
+Create a test.nim file with the following content:
+
+.. code-block:: nim
+  import nimbench
+
+  bench(fpOps1, m):
+    var d = 1.0
+    for i in 1..m:
+      var x = float(i)
+      d = d + x
+    doNotOptimizeAway(d)
+
+  bench(fpOps2, m):
+    var d = 1.0
+    for i in 1..m:
+      var x = float(i)
+      d = d + x
+      d = d - x
+    doNotOptimizeAway(d)
+
+  bench(fpOps3, m):
+    var d = 1.0
+    for i in 1..m:
+      var x = float(i)
+      d = d + x
+      d = d - x
+      d = d * x
+    doNotOptimizeAway(d)
+
+  bench(fpOps4, m):
+    var d = 1.0
+    for i in 1..m:
+      var x = float(i)
+      d = d + x
+      d = d - x
+      d = d * x
+      d = d / x
+    doNotOptimizeAway(d)
+
+  bench(dummy, m):
+    for i in 0..<m:
+      memoryClobber()
+
+  runBenchmarks()
+
+Compile it with the following command:
+::
+  nim c test.nim -r -d:release
+
+The resulting output on an Intel Haswell i5-4670K on Windows:
+::
+  ============================================================================
+  GlobalBenchmark                                 relative  time/iter  iters/s
+  ============================================================================
+  GlobalBenchmark                                            263.10ps    3.80G
+  ============================================================================
+  test.nim                                        relative  time/iter  iters/s
+  ============================================================================
+  fpOps1                                                     525.04ps    1.90G
+  fpOps2                                                       1.31ns  761.51M
+  fpOps3                                                       2.63ns  380.59M
+  fpOps4                                                       7.90ns  126.60M
+  dummy                                                           0fs      inf
+
+Each of these benchmarks have been run hundreds of times to collect benchmark
+samples. The module decides how many iterations to run on your benchmark,
+which increases until the measurements are significant enough. The samples are
+then used to calculate the speed of your code.
+
+The output contains an unexpected ``GlobalBenchmark``. This is a benchmark added
+by the module. It tests how fast running an empty loop on your machine is. My
+CPU has a clock frequency of 3.4GHz, and a turbo boost of 3.8GHz. The output
+reports 3.80G iterations per second, which is reassuring that the module is
+measuring correctly :) Apparently running an empty loop it still takes 1 cycle
+to increase the loop counter and check it. If you get really strange
+results here, the module might not be ported correctly to your platform yet.
+
+The ``fpOps`` benchmarks contain a ``doNotOptimizeAway(d)`` call. Without this
+call, the compiler will optimize away the variable ``d``, because it is unused
+in the rest of the program, and thus useless. doNotOptimizeAway() is exported
+by the module.
+
+Since the module iterates over your benchmarks, the GlobalBenchmark time is
+subtracted from your benchmarks. This ensures that the results in the output
+are accurate. This is also shown by the ``dummy`` benchmark, which reportedly
+takes 0fs to complete. It only calls ``memoryClobber()``, to prevent the
+optimizer throwing away the empty loop. (In fact, this is exactly what the
+GlobalBenchmark does.) memoryClobber() is also exported by the module.
+
+For more examples and details, see the rest of this document.
+Good luck optimizing your code!

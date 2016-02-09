@@ -1,0 +1,17 @@
+This module is used to create benchmarks. Benchmarks are used to correctly
+determine the speed of your code, with the ultimate goal of optimizing it.
+Measuring speed is complicated because of many sources of noise in
+measurements. Also, the compiler may optimize away parts of code snippets
+meant for benchmarking. This module aims to take care of the hard stuff, so
+you can test the speed of your code and start to optimize it!
+For background information, check out the sources that inspire this module:
+- `Lecture Writing Fast Code by Andrei Alexandrescu
+   <https://www.youtube.com/watch?v=ph7FP0LnmcA>`_
+- `Lecture Tuning C++: Benchmarks, and CPUs, and Compilers! Oh My! by
+   Chandler Carruth <https://www.youtube.com/watch?v=nXaxk27zwlk>`_
+- `Folly: Facebook Open-source Library <https://github.com/facebook/folly>`_
+- `Google Benchmark: <https://github.com/google/benchmark>`_
+This module is primarily based on the benchmark functionality in Facebook
+Folly. The implementation differs however, mostly due to rewriting C++ to
+Nim, but also due to creative processes and other influences. This can and
+probably will increase over time.

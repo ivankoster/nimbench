@@ -1,0 +1,16 @@
+Some details in this module are heavily OS, compiler or even platform
+dependent. These include:
+- High precision time measurement procedures
+- The procedures that trick the compiler optimizer doNotOptimizeAway() and
+  memoryClobber()
+This module has been tested on:
+- Windows 10/x86-64 with the MSVC compiler (also called vcc sometimes)
+
+Porting to other platforms is not too much work, but it must be done
+correctly. This means that the resulting assembly code must be checked, to
+determine for example if the doNotOptimizeAway() works and does not generate
+unnecessary overhead.
+
+Everyone is welcome to help / contribute with the porting job. Inspiration
+can be found on many sources on the internet, some of which are listed in the
+introduction.
