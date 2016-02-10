@@ -28,12 +28,12 @@
 ## .. include:: doc/platform_support.txt
 
 import strutils
-include "system/timers" # todo is this allowed?
 
 import strfmt
 
 import nimbench/private/utils
 import nimbench/private/human_readable
+import nimbench/private/timers
 
 type
   BenchmarkSample = tuple[timeInNs: int64, iterations: Natural]
@@ -59,10 +59,9 @@ template bench*(name: untyped, cycles, body: untyped): untyped =
     let numIterations = times
     result.iterations = numIterations
     let cycles = numIterations
-    let startTicks = getTicks()
+    let startTicks = getTimeMeasurement()
     body
-    let endTicks = getTicks()
-    result.timeInNs = int64(endTicks - startTicks)
+    result.timeInNs = getTimeMeasurement() - startTicks
   addBenchmarkImpl(fileName, benchmarkName, execute)
 
 template bench*(name: untyped, body: untyped): untyped =
@@ -114,7 +113,7 @@ proc runBenchmarkGetNsPerIteration(function: BenchmarkFunction,
 
   var epochSamples: seq[float64] = @[]
 
-  let startTicks = getTicks()
+  let startTicks = getTimeMeasurement()
   for epochIndex in 0..<maxEpochs:
     for iterations in geometricSequence(1, 1 shl 30, 2):
       # We double the number of iterations 30 times as long as we don't get a
@@ -126,7 +125,7 @@ proc runBenchmarkGetNsPerIteration(function: BenchmarkFunction,
                            float64(benchSample.iterations) - globalBaseline
       epochSamples.add(max(0.0, nsPerIteration))
       break # We have a result for this epoch, continue on
-    if(getTicks() - startTicks) >= timeBudgetInNs:
+    if(getTimeMeasurement() - startTicks) >= timeBudgetInNs:
       break # time budget exhausted for this benchmark
   result = min(epochSamples) # the minimum has the least amount of noise
 
