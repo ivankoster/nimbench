@@ -38,23 +38,15 @@ import nimbench/private/timers
 type
   BenchmarkSample = tuple[timeInNs: int64, iterations: Natural]
   BenchmarkFunction = proc(times: Natural): BenchmarkSample
-  Benchmark = tuple[fileName: string, name: string, function: BenchmarkFunction]
+  Benchmark = tuple[fileName, name: string, function: BenchmarkFunction]
 
 var benchmarks: seq[Benchmark]
 benchmarks = @[]
 
-proc addBenchmarkImpl(fileName: string, name: string,
-                      function: BenchmarkFunction) =
+proc addBenchmarkImpl(fileName, name: string, function: BenchmarkFunction) =
   benchmarks.add((fileName: fileName, name: name, function: function))
 
-template bench*(name: untyped, cycles, body: untyped): untyped =
-  ## This template is used to create a benchmark. `name` is the name of the
-  ## benchmark. `cycles` is a counter that must be used inside the code
-  ## snippet. The framework uses this counter to indicate the number of
-  ## iterations the code snippet must perform. For examples check `A quick
-  ## example`_.
-  let fileName = instantiationInfo(-1).filename
-  let benchmarkName = stringifyIdentifier(name)
+template benchImpl(fileName, benchmarkName, cycles, body: untyped): untyped =
   proc execute(times: Natural): BenchmarkSample {.gensym.} =
     let numIterations = times
     result.iterations = numIterations
@@ -64,7 +56,18 @@ template bench*(name: untyped, cycles, body: untyped): untyped =
     result.timeInNs = getTimeMeasurement() - startTicks
   addBenchmarkImpl(fileName, benchmarkName, execute)
 
-template bench*(name: untyped, body: untyped): untyped =
+template bench*(name, cycles, body: untyped): untyped =
+  ## This template is used to create a benchmark. `name` is the name of the
+  ## benchmark. `cycles` is a counter that must be used inside the code
+  ## snippet. The framework uses this counter to indicate the number of
+  ## iterations the code snippet must perform. For examples check `A quick
+  ## example`_.
+  let fileName = instantiationInfo(-1).filename
+  let benchmarkName = stringifyIdentifier(name)
+  benchImpl(fileName, benchmarkName, cycles, body)
+
+
+template bench*(name, body: untyped): untyped =
   ## This template is used to create a benchmark. `name` is the name of the
   ## benchmark. For example:
   ##
@@ -80,7 +83,9 @@ template bench*(name: untyped, body: untyped): untyped =
   ## It is advised if you have a loop in your benchmark, to use the other
   ## `bench` template, with the `cycles` parameter. This gives the module more
   ## control over the iterating and might produce better results.
-  bench(name, m):
+  let fileName = instantiationInfo(-1).filename
+  let benchmarkName = stringifyIdentifier(name)
+  benchImpl(fileName, benchmarkName, m):
     var i = m
     while i > 0:
       dec(i)
@@ -141,7 +146,7 @@ proc getGlobalBenchmarkBaselineIndex(): auto =
   raise newException(KeyError, "Could not find GlobalBenchmarkBaseline " &
                                "in the benchmark list!")
 
-type BenchmarkResult = tuple[fileName: string, name: string, timeInNs: float64]
+type BenchmarkResult = tuple[fileName, name: string, timeInNs: float64]
 
 proc printBenchmarkResults(data: openArray[BenchmarkResult])
 
