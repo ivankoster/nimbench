@@ -4,7 +4,9 @@ dependent. These include:
 - The procedures that trick the compiler optimizer doNotOptimizeAway() and
   memoryClobber()
 This module has been tested on:
-- Windows 10/x86-64 with the MSVC compiler (also called vcc sometimes)
+- Windows 10/x86-64 with the
+  - MSVC compiler of Visual Studio 2013 (also called vcc sometimes)
+  - Mingw compiler distributed with Nim Version 0.13.0
 
 Porting to other platforms is not too much work, but it must be done
 correctly. This means that the resulting assembly code must be checked, to
