@@ -36,15 +36,16 @@ when defined(windows):
     let counts = int64(a) - int64(b)
     # first multiple to prevent loss of precision
     result = counts * 1_000_000_000 div countsPerSec
-when defined(macosx):
+elif defined(macosx):
   type
     mach_timebase_info_data_t {.pure, final.} = object
       numer: uint32
       denom: uint32
 
+  {.pragma: mt, importc, header: "<mach/mach_time.h>".}
 
-  proc mach_timebase_info(timebase: var mach_timebase_info_data_t) {.importc, header: "<mach/mach_time.h>".}
-  proc mach_absolute_time(): uint64 {.importc, header: "<mach/mach_time.h>".}
+  proc mach_timebase_info(timebase: var mach_timebase_info_data_t) {.mt.}
+  proc mach_absolute_time(): uint64 {.mt.}
 
   proc getTimeMeasurement*(): TimeMeasurement {.inline.} =
     result = cast[TimeMeasurement](mach_absolute_time())
