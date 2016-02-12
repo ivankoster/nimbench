@@ -132,7 +132,8 @@ proc runBenchmarkGetNsPerIteration(function: BenchmarkFunction,
       break # We have a result for this epoch, continue on
     if(getTimeMeasurement() - startTicks) >= timeBudgetInNs:
       break # time budget exhausted for this benchmark
-  result = min(epochSamples) # the minimum has the least amount of noise
+  # return the minimum, because it has the least amount of noise
+  result = if len(epochSamples) == 0: 0.0 else: min(epochSamples)
 
 bench(GlobalBenchmarkBaselineWithSillyObfuscatingTail):
   memoryClobber()
