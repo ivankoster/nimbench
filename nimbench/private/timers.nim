@@ -36,6 +36,23 @@ when defined(windows):
     let counts = int64(a) - int64(b)
     # first multiple to prevent loss of precision
     result = counts * 1_000_000_000 div countsPerSec
+when defined(macosx):
+  type
+    mach_timebase_info_data_t {.pure, final.} = object
+      numer: uint32
+      denom: uint32
 
+
+  proc mach_timebase_info(timebase: var mach_timebase_info_data_t) {.importc, header: "<mach/mach_time.h>".}
+  proc mach_absolute_time(): uint64 {.importc, header: "<mach/mach_time.h>".}
+
+  proc getTimeMeasurement*(): TimeMeasurement {.inline.} =
+    result = cast[TimeMeasurement](mach_absolute_time())
+
+  proc `-`*(a,b: TimeMeasurement): NanoSeconds =
+    let time = a.int64 - b.int64
+    var timebase: mach_timebase_info_data_t
+    mach_timebase_info(timebase)
+    result = time * int64(timebase.numer.float32 / timebase.denom.float32)
 else:
   {.fatal: "time measurement for this platform is not implemented yet!".}
