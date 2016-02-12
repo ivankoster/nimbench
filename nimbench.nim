@@ -105,9 +105,9 @@ template memoryClobber*() =
     proc memoryClobber() {.importc: "_ReadWriteBarrier", header: "intrin.h".}
     memoryClobber();
   else:
-    #use emit pragma?
-    #asm volatile("" : : : "memory");
-    {.fatal: "memoryClobber for this compiler is not implemented yet!".}
+    {.emit: """
+      asm volatile("" ::: "memory");
+    """.}
 
 proc runBenchmarkGetNsPerIteration(function: BenchmarkFunction,
                                    globalBaseline: float64): float64 =
