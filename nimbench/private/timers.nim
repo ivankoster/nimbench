@@ -55,5 +55,15 @@ elif defined(macosx):
     var timebase: mach_timebase_info_data_t
     mach_timebase_info(timebase)
     result = time * int64(timebase.numer.float32 / timebase.denom.float32)
+elif defined(posix):
+  import posix
+  proc getTimeMeasurement*(): TimeMeasurement {.inline.} =
+    var timespec: Timespec
+    let success = clock_gettime(CLOCK_REALTIME, timespec)
+    if success != 0:
+      raise newException(OSError, "clock_gettime failed")
+    result = TimeMeasurement(int64(timespec.tv_sec) * 1_000_000_000'i64 +
+                             int64(timespec.tv_nsec))
+  proc `-`*(a, b: TimeMeasurement): NanoSeconds {.borrow.}
 else:
   {.fatal: "time measurement for this platform is not implemented yet!".}
