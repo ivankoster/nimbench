@@ -6,7 +6,7 @@ meant for benchmarking. This module aims to take care of the hard stuff, so
 you can test the speed of your code and start to optimize it!
 For background information, check out the sources that inspire this module:
 - `Lecture Writing Fast Code by Andrei Alexandrescu
-   <https://www.youtube.com/watch?v=ph7FP0LnmcA>`_
+   <https://www.youtube.com/watch?v=vrfYLlR8X8k>`_
 - `Lecture Tuning C++: Benchmarks, and CPUs, and Compilers! Oh My! by
    Chandler Carruth <https://www.youtube.com/watch?v=nXaxk27zwlk>`_
 - `Folly: Facebook Open-source Library <https://github.com/facebook/folly>`_
