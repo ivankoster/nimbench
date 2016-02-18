@@ -38,15 +38,19 @@ import nimbench/private/timers
 type
   BenchmarkSample = tuple[timeInNs: int64, iterations: Natural]
   BenchmarkFunction = proc(times: Natural): BenchmarkSample
-  Benchmark = tuple[fileName, name: string, function: BenchmarkFunction]
+  Benchmark = tuple[fileName, name: string, relative: bool,
+                    function: BenchmarkFunction]
 
 var benchmarks: seq[Benchmark]
 benchmarks = @[]
 
-proc addBenchmarkImpl(fileName, name: string, function: BenchmarkFunction) =
-  benchmarks.add((fileName: fileName, name: name, function: function))
+proc addBenchmarkImpl(fileName, name: string, relative: bool,
+                      function: BenchmarkFunction) =
+  benchmarks.add((fileName: fileName, name: name, relative: relative,
+                  function: function))
 
-template benchImpl(fileName, benchmarkName, cycles, body: untyped): untyped =
+template benchImpl(relative: bool,
+                   fileName, benchmarkName, cycles, body: untyped): untyped =
   proc execute(times: Natural): BenchmarkSample {.gensym.} =
     let numIterations = times
     result.iterations = numIterations
@@ -54,7 +58,7 @@ template benchImpl(fileName, benchmarkName, cycles, body: untyped): untyped =
     let startTicks = getTimeMeasurement()
     body
     result.timeInNs = getTimeMeasurement() - startTicks
-  addBenchmarkImpl(fileName, benchmarkName, execute)
+  addBenchmarkImpl(fileName, benchmarkName, relative, execute)
 
 template bench*(name, cycles, body: untyped): untyped =
   ## This template is used to create a benchmark. `name` is the name of the
@@ -64,8 +68,18 @@ template bench*(name, cycles, body: untyped): untyped =
   ## example`_.
   let fileName = instantiationInfo(-1).filename
   let benchmarkName = stringifyIdentifier(name)
-  benchImpl(fileName, benchmarkName, cycles, body)
+  benchImpl(false, fileName, benchmarkName, cycles, body)
 
+template benchRelative*(name, cycles, body: untyped): untyped =
+  ## The same as ``bench()``, except the previous ``bench()`` is taken as a
+  ## baseline. Besides the time, the speedup of this benchmark, relative to the
+  ## baseline, is also printed. This can be used to check how much faster your
+  ## new implementation is. For example: 100% means just as fast, 200% means
+  ## twice as fast. A value below 100% means your code got slower. A new
+  ## baseline is created with every ``bench()``.
+  let fileName = instantiationInfo(-1).filename
+  let benchmarkName = stringifyIdentifier(name)
+  benchImpl(true, fileName, benchmarkName, cycles, body)
 
 template bench*(name, body: untyped): untyped =
   ## This template is used to create a benchmark. `name` is the name of the
@@ -81,11 +95,22 @@ template bench*(name, body: untyped): untyped =
   ##    d = d / x
   ##    doNotOptimizeAway(d)
   ## It is advised if you have a loop in your benchmark, to use the other
-  ## `bench` template, with the `cycles` parameter. This gives the module more
-  ## control over the iterating and might produce better results.
+  ## `bench()<#bench.t,untyped,untyped,untyped>`_ template, with the `cycles`
+  ## parameter. This gives the module more control over the iterating and might
+  ## produce better results.
   let fileName = instantiationInfo(-1).filename
   let benchmarkName = stringifyIdentifier(name)
-  benchImpl(fileName, benchmarkName, m):
+  benchImpl(false, fileName, benchmarkName, m):
+    var i = m
+    while i > 0:
+      dec(i)
+      body
+
+template benchRelative*(name, body: untyped): untyped =
+  ## See `benchRelative()<#benchRelative.t,untyped,untyped,untyped>`_.
+  let fileName = instantiationInfo(-1).filename
+  let benchmarkName = stringifyIdentifier(name)
+  benchImpl(true, fileName, benchmarkName, m):
     var i = m
     while i > 0:
       dec(i)
@@ -97,7 +122,7 @@ proc doNotOptimizeAway*[T](x: var T) {.importc, noDecl.} ## Use this proc on
   ## see that the variable is unused and optimize the code away.
 
 template memoryClobber*() =
-  ## Like doNotOptimizeAway() this template could come in handy when the
+  ## Like ``doNotOptimizeAway()`` this template could come in handy when the
   ## compiler optimized too much code away. In general this template is not
   ## needed. If you think you might be in need, it is best to analyze assembly
   ## code with and without the call.
@@ -147,7 +172,8 @@ proc getGlobalBenchmarkBaselineIndex(): auto =
   raise newException(KeyError, "Could not find GlobalBenchmarkBaseline " &
                                "in the benchmark list!")
 
-type BenchmarkResult = tuple[fileName, name: string, timeInNs: float64]
+type BenchmarkResult = tuple[fileName, name: string, relative: bool,
+                             timeInNs: float64]
 
 proc printBenchmarkResults(data: openArray[BenchmarkResult])
 
@@ -160,7 +186,7 @@ proc runBenchmarks*() =
     baselineIndex = getGlobalBenchmarkBaselineIndex()
     globalBaseline = runBenchmarkGetNsPerIteration(
                       benchmarks[baselineIndex].function, 0.0)
-  results.add(("GlobalBenchmark", "GlobalBenchmark", globalBaseline))
+  results.add(("GlobalBenchmark", "GlobalBenchmark", false, globalBaseline))
   # the globalBaseline measures how expensive iterating is, so we can subtract
   # it from the real benchmarks
 
@@ -168,7 +194,7 @@ proc runBenchmarks*() =
     if i == baselineIndex: continue
     let nsPerIteration = runBenchmarkGetNsPerIteration(b.function,
                                                        globalBaseline)
-    results.add((b.fileName, b.name, nsPerIteration))
+    results.add((b.fileName, b.name, b.relative, nsPerIteration))
 
   printBenchmarkResults(results)
 
@@ -185,7 +211,9 @@ proc printBenchmarkResults(data: openArray[BenchmarkResult]) =
     stdout.writeLine("{:<{}}{}".fmt(fileName, width-len(tail), tail))
     separatingLine('=')
 
-  var lastFile = ""
+  var
+    lastFile = ""
+    baselineNsPerIteration: float64 = Inf
 
   for record in data:
     let file = record.fileName
@@ -197,6 +225,14 @@ proc printBenchmarkResults(data: openArray[BenchmarkResult]) =
       secPerIteration = nsPerIteration / 1e9
       itersPerSec = if secPerIteration == 0.0: Inf else: (1.0 / secPerIteration)
 
-    stdout.writeLine("{0:<{1}.{1}}           {2:>9.9}  {3:>7.7}".fmt(
-      record.name, width-len(tail)-1, readableTime(secPerIteration, 2),
-      readableMetric(itersPerSec, 2)))
+    if record.relative:
+      let relative = baselineNsPerIteration / nsPerIteration
+      #printf("%*s %7.2f%%  %9s  %7s\n",
+      stdout.writeLine("{0:<{1}.{1}} {2:>8.2%}  {3:>9.9}  {4:>7.7}".fmt(
+        record.name, width-len(tail)-1, relative,
+        readableTime(secPerIteration, 2), readableMetric(itersPerSec, 2)))
+    else:
+      baselineNsPerIteration = nsPerIteration
+      stdout.writeLine("{0:<{1}.{1}}           {2:>9.9}  {3:>7.7}".fmt(
+        record.name, width-len(tail)-1, readableTime(secPerIteration, 2),
+        readableMetric(itersPerSec, 2)))

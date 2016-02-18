@@ -1177,8 +1177,12 @@ dt pre > span.Operator ~ span.Identifier, dt pre > span.Operator ~ span.Operator
   <ul class="simple simple-toc-section">
       <li><a class="reference" href="#bench.t,untyped,untyped,untyped"
     title="bench*(name, cycles, body: untyped): untyped"><wbr />bench</a></li>
+  <li><a class="reference" href="#benchRelative.t,untyped,untyped,untyped"
+    title="benchRelative*(name, cycles, body: untyped): untyped"><wbr />bench<wbr />Relative</a></li>
   <li><a class="reference" href="#bench.t,untyped,untyped"
     title="bench*(name, body: untyped): untyped"><wbr />bench</a></li>
+  <li><a class="reference" href="#benchRelative.t,untyped,untyped"
+    title="benchRelative*(name, body: untyped): untyped"><wbr />bench<wbr />Relative</a></li>
   <li><a class="reference" href="#memoryClobber.t,"
     title="memoryClobber*()"><wbr />memory<wbr />Clobber</a></li>
 
@@ -1302,6 +1306,11 @@ Call this proc to run all the created benchmarks and print their results to stdo
 This template is used to create a benchmark. <cite>name</cite> is the name of the benchmark. <cite>cycles</cite> is a counter that must be used inside the code snippet. The framework uses this counter to indicate the number of iterations the code snippet must perform. For examples check <a class="reference external" href="#a-quick-example">A quick example</a>.
 
 </dd>
+<dt id="benchRelative"><a name="benchRelative.t,untyped,untyped,untyped"></a><pre><span class="Keyword">template</span> <span class="Identifier">benchRelative</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">name</span><span class="Other">,</span> <span class="Identifier">cycles</span><span class="Other">,</span> <span class="Identifier">body</span><span class="Other">:</span> <span class="Identifier">untyped</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">untyped</span></pre></dt>
+<dd>
+The same as <tt class="docutils literal"><span class="pre">bench()</span></tt>, except the previous <tt class="docutils literal"><span class="pre">bench()</span></tt> is taken as a baseline. Besides the time, the speedup of this benchmark, relative to the baseline, is also printed. This can be used to check how much faster your new implementation is. For example: 100% means just as fast, 200% means twice as fast. A value below 100% means your code got slower. A new baseline is created with every <tt class="docutils literal"><span class="pre">bench()</span></tt>.
+
+</dd>
 <dt id="bench"><a name="bench.t,untyped,untyped"></a><pre><span class="Keyword">template</span> <span class="Identifier">bench</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">name</span><span class="Other">,</span> <span class="Identifier">body</span><span class="Other">:</span> <span class="Identifier">untyped</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">untyped</span></pre></dt>
 <dd>
 This template is used to create a benchmark. <cite>name</cite> is the name of the benchmark. For example:<pre class = "listing"><span class="Identifier">bench</span><span class="Punctuation">(</span><span class="Identifier">fpOps4</span><span class="Punctuation">)</span><span class="Punctuation">:</span>
@@ -1311,13 +1320,18 @@ This template is used to create a benchmark. <cite>name</cite> is the name of th
   <span class="Identifier">d</span> <span class="Operator">=</span> <span class="Identifier">d</span> <span class="Operator">-</span> <span class="Identifier">x</span>
   <span class="Identifier">d</span> <span class="Operator">=</span> <span class="Identifier">d</span> <span class="Operator">*</span> <span class="Identifier">x</span>
   <span class="Identifier">d</span> <span class="Operator">=</span> <span class="Identifier">d</span> <span class="Operator">/</span> <span class="Identifier">x</span>
-  <span class="Identifier">doNotOptimizeAway</span><span class="Punctuation">(</span><span class="Identifier">d</span><span class="Punctuation">)</span></pre><p>It is advised if you have a loop in your benchmark, to use the other <cite>bench</cite> template, with the <cite>cycles</cite> parameter. This gives the module more control over the iterating and might produce better results.</p>
+  <span class="Identifier">doNotOptimizeAway</span><span class="Punctuation">(</span><span class="Identifier">d</span><span class="Punctuation">)</span></pre><p>It is advised if you have a loop in your benchmark, to use the other <a class="reference external" href="#bench.t,untyped,untyped,untyped">bench()</a> template, with the <cite>cycles</cite> parameter. This gives the module more control over the iterating and might produce better results.</p>
 
+
+</dd>
+<dt id="benchRelative"><a name="benchRelative.t,untyped,untyped"></a><pre><span class="Keyword">template</span> <span class="Identifier">benchRelative</span><span class="Operator">*</span><span class="Other">(</span><span class="Identifier">name</span><span class="Other">,</span> <span class="Identifier">body</span><span class="Other">:</span> <span class="Identifier">untyped</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">untyped</span></pre></dt>
+<dd>
+See <a class="reference external" href="#benchRelative.t,untyped,untyped,untyped">benchRelative()</a>.
 
 </dd>
 <dt id="memoryClobber"><a name="memoryClobber.t,"></a><pre><span class="Keyword">template</span> <span class="Identifier">memoryClobber</span><span class="Operator">*</span><span class="Other">(</span><span class="Other">)</span></pre></dt>
 <dd>
-Like doNotOptimizeAway() this template could come in handy when the compiler optimized too much code away. In general this template is not needed. If you think you might be in need, it is best to analyze assembly code with and without the call.
+Like <tt class="docutils literal"><span class="pre">doNotOptimizeAway()</span></tt> this template could come in handy when the compiler optimized too much code away. In general this template is not needed. If you think you might be in need, it is best to analyze assembly code with and without the call.
 
 </dd>
 
@@ -1330,7 +1344,7 @@ Like doNotOptimizeAway() this template could come in handy when the compiler opt
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br/>
-        <small>Made with Nim. Generated: 2016-02-14 14:38:29 UTC</small>
+        <small>Made with Nim. Generated: 2016-02-18 22:00:49 UTC</small>
       </div>
     </div>
   </div>
