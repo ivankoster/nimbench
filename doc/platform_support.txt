@@ -10,6 +10,11 @@ This module has been tested on:
 - Ubuntu 15.10 / x86 (in a VM) with compilers:
   - clang 3.6.2
   - gcc 5.2.1
+Community members tested and reported that nimbench also works on:
+- Ubuntu 15.10 / x86-64
+- Macosx
+- Details about compilers / version numbers are unfortunately not reported, feel
+  free to add them when you test your specific platform.
 
 Porting to other platforms is not too much work, but it must be done
 correctly. This means that the resulting assembly code must be checked, to
